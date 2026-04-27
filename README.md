@@ -1,27 +1,96 @@
 # AETHER-PULSE // OMNI-LOOP
+**High-Assurance Autonomic DevSecOps Engine**
 
-**The Neo-Techno DevSecOps Reflex & Cognitive Engine**
+AETHER-PULSE is a localized, high-speed, edge-deployed cyber-defense platform. Designed to run completely air-gapped on edge hardware (such as the ASUS ProArt PX13), it seamlessly unifies real-time kernel telemetry, hardware attestation, and localized Large Language Model (Gemma 2) reasoning to identify and neutralize advanced threats automatically.
 
-AETHER-PULSE is the unified orchestration layer connecting the localized autonomic defense systems on the ASUS ProArt PX13 edge workstation. It binds the millisecond-latency WASM execution of **Synapse** with the heavy-lifting cognitive analysis of **Cortex.X**, fed by real-time kernel telemetry from **REVENANT.LSM**.
+---
 
-## Architecture Overview
+## 🏗️ Architecture Diagram
 
-*   **The Ether (The Network/Kernel):** Monitored by `REVENANT.LSM` (eBPF/Rust) running within the WSL2 Linux subsystem.
-*   **The Pulse (The Reflex Engine):** `Synapse` (Go/Wasm). A whisper-quiet daemon operating on the CPU efficiency cores to provide instantaneous auto-remediation.
-*   **The Omni-Loop (The Cognitive Engine):** `Cortex.X` (Dockerized). Leverages local LLMs (Mistral-Nemo, Qwen2.5-Coder) via Ollama and a vector database (Qdrant) to analyze anomalies, query historical mitigation protocols, and instruct Synapse.
+```mermaid
+graph TD
+    subgraph "The Ether (Sensors)"
+        RWIN[REVENANT.WIN<br/>Windows ETW Sensor]
+        RLSM[REVENANT.LSM<br/>Linux eBPF Sensor]
+    end
 
-## Infrastructure
+    subgraph "The Pulse (Reflex Engine)"
+        SYN[Synapse Router<br/>Go / gRPC]
+        WASM[Axon Module<br/>WebAssembly Mitigations]
+    end
 
-This repository contains the `docker-compose.yml` to spin up the local cognitive infrastructure.
+    subgraph "The Omni-Loop (Cognitive Engine)"
+        CORTEX[Cortex.X<br/>Ollama: Gemma 2 & Qdrant]
+        ARGUS[0xARGUS<br/>Hardware Attestation & SCRM]
+    end
 
-### Services:
-1.  **Ollama (`aether-pulse_ollama`)**: The local REST API for LLM inference (binds to port `11434`).
-2.  **Qdrant (`aether-pulse_qdrant`)**: The ultra-fast vector database for embedding and retrieving SCRM / DevSecOps knowledge (binds to port `6333`).
+    RWIN -- "gRPC Telemetry" --> SYN
+    RLSM -- "gRPC Telemetry" --> SYN
+    
+    SYN -- "Query Trust" --> ARGUS
+    SYN -- "Behavioral Analysis" --> CORTEX
+    
+    CORTEX -. "Logic/Mitigation" .-> SYN
+    ARGUS -. "Trust State" .-> SYN
+    
+    SYN -- "Trigger Reflex" --> WASM
+    WASM -- "Remediate" --> RWIN
+```
 
-### Getting Started
+## 🔄 Process Flow Diagram
 
-To initialize the cognitive engine infrastructure, run:
+```mermaid
+sequenceDiagram
+    participant OS as Host OS (Win/Linux)
+    participant Rev as REVENANT (Sensor)
+    participant Syn as Synapse (Router)
+    participant Arg as 0xARGUS (Trust)
+    participant Cor as Cortex.X (Gemma 2)
+    participant Wasm as Axon (WASM)
 
-```powershell
-docker-compose up -d
+    OS->>Rev: Kernel Event (e.g., Process Creation)
+    Rev->>Syn: Stream Telemetry (gRPC)
+    activate Syn
+    Syn->>Arg: Verify Hardware/Process Trust
+    Arg-->>Syn: Trust Level = Low
+    Syn->>Cor: Send Payload for Behavioral Analysis
+    activate Cor
+    Cor-->>Syn: Analysis complete. Recommended Action: TERMINATE
+    deactivate Cor
+    Syn->>Wasm: Load & Execute WASM Remediation Payload
+    Wasm->>OS: Execute Kernel Hook (Kill Process)
+    Syn-->>Rev: Return Mitigation Status
+    deactivate Syn
+```
+
+## 🚀 Getting Started
+
+1. **Start the Cognitive Cluster**
+   ```bash
+   docker compose up -d
+   ```
+   *This brings up Ollama, Qdrant, and the dual 0xARGUS engines.*
+
+2. **Start the Synapse Router**
+   ```bash
+   cd synapse-core
+   go run main.go
+   ```
+
+3. **Start the Kernel Sensors**
+   ```bash
+   cd ../REVENANT.WIN
+   cargo run
+   ```
+
+4. **Monitor the Loop**
+   Right-click the `AetherTray.ps1` orb in your Windows taskbar to see live threat status!
+
+## 📚 Documentation
+Full documentation is built with MkDocs.
+
+## 🛡️ Ecosystem Alignment
+AETHER-PULSE is designed to seamlessly integrate with the broader high-assurance ecosystem:
+*   **Railhead:** Acts as the secure, zero-trust deployment and orchestration layer for rolling out AETHER-PULSE sensors and updates across edge networks.
+*   **Keystone:** Provides the foundational secure enclaves, identity, and cryptographic key management that deeply anchor the `0xARGUS` hardware attestation chains.
 ```
