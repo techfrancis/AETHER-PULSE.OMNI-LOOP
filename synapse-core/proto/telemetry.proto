@@ -1,0 +1,22 @@
+syntax = "proto3";
+package telemetry;
+
+option go_package = "aether-pulse/synapse/proto/telemetry";
+
+// The PulseRouter acts as the central intake for all REVENANT telemetry
+service PulseRouter {
+  // Streams high-speed telemetry from REVENANT.WIN and REVENANT.LSM
+  rpc StreamTelemetry (TelemetryEvent) returns (RoutingResponse) {}
+}
+
+message TelemetryEvent {
+  string provider_name = 1;
+  uint32 event_id = 2;
+  uint32 process_id = 3;
+  string payload = 4;       // JSON payload of the kernel event
+}
+
+message RoutingResponse {
+  bool acknowledged = 1;
+  string action_taken = 2;  // e.g., "WASM_REMEDIATION_TRIGGERED" or "ROUTED_TO_CORTEX"
+}

@@ -1,0 +1,16 @@
+# Local database storage
+data/ollama/
+data/qdrant/
+
+# Logs
+*.log
+*.err
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.wasm
+
+# Secrets
+.env

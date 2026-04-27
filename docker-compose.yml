@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # AETHER-PULSE Cognitive Engine: Local LLM Inference
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aether-pulse_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./data/ollama:/root/.ollama
+    restart: always
+
+  # AETHER-PULSE Memory: Vector Database for Cyber/DevSecOps Context
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: aether-pulse_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    restart: always
+
+  # 0xARGUS: Hardware Attestation (gRPC Engine)
+  argus-attestation:
+    build:
+      context: ../0xARGUS
+    container_name: aether-pulse_argus_grpc
+    command: ["python", "server.py"]
+    ports:
+      - "50053:50053"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MACRO_BRIDGE_URL=http://localhost:8080
+    restart: always
+
+  # 0xARGUS: Supply Chain Risk Management (REST API & Scanner)
+  argus-scrm:
+    build:
+      context: ../0xARGUS
+    container_name: aether-pulse_argus_rest
+    ports:
+      - "8444:8443"
+    volumes:
+      - ../0xARGUS/certs:/app/certs
+      - ../0xARGUS/logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
