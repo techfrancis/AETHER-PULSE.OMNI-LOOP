@@ -1,4 +1,4 @@
-module aether-pulse/synapse
+module aether-pulse/aether-core
 
 go 1.21
 
