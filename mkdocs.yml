@@ -1,0 +1,14 @@
+site_name: AETHER-PULSE // OMNI-LOOP
+site_description: High-Assurance Autonomic DevSecOps Engine
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: deep purple
+    accent: cyan
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Sensors (REVENANT): sensors.md
+  - Reflex Engine (Synapse): synapse.md
+  - Cognitive Core (Cortex.X): cortex.md
