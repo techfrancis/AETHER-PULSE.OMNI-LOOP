@@ -1,13 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net"
+	"net/http"
+	"net/url"
 	"strings"
 
 	"google.golang.org/grpc"
-	// pb "aether-pulse/synapse/proto/telemetry" // Uncomment once protoc is run
+	// pb "aether-pulse/aether-core/proto/telemetry" // Uncomment once protoc is run
 )
 
 // PulseRouterServer implements the gRPC interface defined in telemetry.proto
@@ -68,29 +73,47 @@ func StreamTelemetryStub(ctx context.Context, provider string, eventID uint32, p
 
 // QueryCortexX acts as the bridge to the LLM Cognitive Layer
 func QueryCortexX(payload string) {
-	log.Println(" -> [Cortex.X] Routing payload to local LLM for behavioral analysis...")
+	log.Println(" -> [Cortex.X] Recalling historical context from Gemini chats...")
+
+	// 1. Memory Recall (CORTEX.X RAG)
+	searchURL := "http://localhost:8000/api/search?q=" + url.QueryEscape(payload) + "&top_k=2"
+	respSearch, err := http.Get(searchURL)
+	historicalContext := ""
+	if err != nil {
+		log.Printf(" -> [Cortex.X] Failed to reach RAG API: %v. Proceeding without history.", err)
+	} else {
+		defer respSearch.Body.Close()
+		var searchResult struct {
+			Results []struct {
+				Content string `json:"content"`
+			} `json:"results"`
+		}
+		if err := json.NewDecoder(respSearch.Body).Decode(&searchResult); err == nil && len(searchResult.Results) > 0 {
+			historicalContext = searchResult.Results[0].Content
+			log.Println(" -> [Cortex.X] Successfully retrieved relevant Gemini chat history.")
+		}
+	}
+
+	log.Println(" -> [Ironclad-Sentinel] Pushing payload & history to Gemma 2 for Zero-Trust analysis...")
 	
-	/*
-	// Route the query through Ironclad-Sentinel (Zero Trust AI Proxy) for auditing & heuristic verification
-	// Ironclad will forward this to the actual Ollama container securely.
-	url := "http://localhost:9000/api/generate"
+	// 2. Zero-Trust Decision (Ironclad -> Gemma 2)
+	ironcladURL := "http://localhost:9000/api/generate"
+	prompt := fmt.Sprintf("Analyze this anomaly: %s\n\nPast Chat Context: %s\n\nRecommend DevSecOps mitigation (e.g., TERMINATE or ISOLATE):", payload, historicalContext)
+	
 	requestBody, _ := json.Marshal(map[string]interface{}{
 		"model":  "gemma2",
-		"prompt": "Analyze this anomalous telemetry and recommend a DevSecOps mitigation: " + payload,
+		"prompt": prompt,
 		"stream": false,
 	})
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(requestBody))
+	respGen, err := http.Post(ironcladURL, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
-		log.Printf(" -> [Cortex.X] Engine offline or unreachable: %v", err)
+		log.Printf(" -> [Ironclad-Sentinel] Proxy offline or unreachable: %v", err)
 	} else {
-		defer resp.Body.Close()
-		log.Println(" -> [Cortex.X] Cognitive Analysis Complete. Applying dynamic mitigation.")
-		
-		// Note: Here you would parse the JSON response from Ollama and execute 
-		// the recommended WASM functions via the Axon module.
+		defer respGen.Body.Close()
+		log.Println(" -> [Ironclad-Sentinel] Cognitive Analysis Complete. Applying dynamic mitigation via WASM.")
+		// Parse mitigation action here and execute Axon WASM sandbox...
 	}
-	*/
 }
 
 func main() {
