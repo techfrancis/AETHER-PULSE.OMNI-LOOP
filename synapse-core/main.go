@@ -71,8 +71,9 @@ func QueryCortexX(payload string) {
 	log.Println(" -> [Cortex.X] Routing payload to local LLM for behavioral analysis...")
 	
 	/*
-	// Example Ollama REST API Call to the Cortex.X container:
-	url := "http://localhost:11434/api/generate"
+	// Route the query through Ironclad-Sentinel (Zero Trust AI Proxy) for auditing & heuristic verification
+	// Ironclad will forward this to the actual Ollama container securely.
+	url := "http://localhost:9000/api/generate"
 	requestBody, _ := json.Marshal(map[string]interface{}{
 		"model":  "gemma2",
 		"prompt": "Analyze this anomalous telemetry and recommend a DevSecOps mitigation: " + payload,

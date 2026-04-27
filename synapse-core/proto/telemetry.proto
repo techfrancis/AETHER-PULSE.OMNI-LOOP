@@ -1,7 +1,7 @@
 syntax = "proto3";
 package telemetry;
 
-option go_package = "aether-pulse/synapse/proto/telemetry";
+option go_package = "./proto/telemetry";
 
 // The PulseRouter acts as the central intake for all REVENANT telemetry
 service PulseRouter {
