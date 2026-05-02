@@ -1,0 +1,62 @@
+# AETHER-PULSE perf-advisor — Tier 1 config
+#
+# Polling cadence + sensor wiring + rule thresholds. Tune thresholds as we
+# accumulate real history; defaults are deliberately conservative.
+
+poll_interval_sec: 60
+
+storage:
+  history_db: "~/.aether-pulse/perf-advisor/history.db"
+  findings_log: "~/.aether-pulse/perf-advisor/findings.jsonl"
+
+sensors:
+  vllm:
+    enabled: true
+    metrics_url: "http://localhost:8000/metrics"
+    # Used to fingerprint the running config (image + cmd args + env).
+    config_command: ["docker", "inspect", "nexus_vllm_native"]
+
+  synapse:
+    enabled: true
+    data_dir: "~/.synapse/data"
+    storage_dir: "~/.synapse/storage"
+    logs_dir: "C:/source/3-agentic-dev-tools/3.1-ai-orchestration/Synapse/logs"
+    config_path: "C:/source/3-agentic-dev-tools/3.1-ai-orchestration/Synapse/synapse_config.yaml"
+
+# Rule thresholds. Each rule has its own block; set enabled: false to mute one.
+rules:
+  vllm_queue_saturated:
+    enabled: true
+    description: "vLLM running queue at max concurrency for >sustained_minutes"
+    threshold: 16
+    sustained_minutes: 5
+
+  vllm_kv_cache_high:
+    enabled: true
+    description: "KV cache usage above threshold_pct sustained for >sustained_minutes"
+    threshold_pct: 85
+    sustained_minutes: 2
+
+  vllm_throughput_drop:
+    enabled: true
+    description: "Generation tok/s drops > drop_pct vs rolling baseline"
+    drop_pct: 25
+    baseline_window_minutes: 30
+    eval_window_minutes: 5
+
+  synapse_ingest_stalled:
+    enabled: true
+    description: "Ingest log marked active but log file silent > stall_seconds"
+    stall_seconds: 300
+
+  synapse_cards_per_min_drop:
+    enabled: true
+    description: "Synapse cards/min drops > drop_pct vs rolling baseline"
+    drop_pct: 25
+    baseline_window_minutes: 60
+    eval_window_minutes: 10
+
+  synapse_no_recent_activity:
+    enabled: false
+    description: "Inform-only: no Synapse ingest activity in last inactive_minutes"
+    inactive_minutes: 30
